@@ -38,7 +38,7 @@ La librería es compatible con Windows, Linux y macOS.
 # Si, [actualiza_librerias.py] esta en una SUB_CARPETA usa: 
 * import SUB_CARPETA.actualiza_librerias as lib
 
-# Luego llama a la funcion para actualizar PIP y verificar e instlar las librerias faltantes:
+# Luego llama a la funcion para actualizar PIP y verificar e instalar las librerias faltantes:
 * lib.main_lib()
 
 Nota: Estos 2 codigo a usar, se colocan en tu script. Sin el *
