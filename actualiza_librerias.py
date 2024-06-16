@@ -31,15 +31,15 @@ def actualizar_pip():
                 print(f"Error al actualizar pip con python.exe -m pip: {e}")
     elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'): # Linux/MacOS
         try:
-            subprocess.run(["pip3", "--upgrade", "pip"])
+            subprocess.run(["pip3", "install", "--upgrade", "pip"])
         except Exception as e:
             print(f"Error al actualizar pip sin sudo: {e}")
             try:
-                subprocess.run(["sudo", "pip3", "--upgrade", "pip"])  # Intenta utilizar sudo
+                subprocess.run(["sudo", "pip3", "install", "--upgrade", "pip"])  # Intenta utilizar sudo
             except Exception as e:
                 print(f"Error al actualizar pip con sudo: {e}")
 
-def clear():
+def clear(): # Limpia pantalla  Windows/Linux/MacOS
 	if name == 'nt':
 		_ = system('cls')
 	else:
