@@ -1,4 +1,4 @@
-# Codigo por Pablo Otero. 15/06/2024 Python 3.11.3 
+# Codigo por Pablo Otero. 16/06/2024 Python 3.11.9 
 """
 # Nota: Si, [actualiza_librerias.py] esta en la misma carpeta que tu programa usa el siguiente script para llamar a la libreria: 
 * import actualiza_librerias as lib
@@ -15,57 +15,93 @@ Nota: Estos 2 codigo a usar, se colocan en tu script. Sin el *
 import subprocess # Utilizado para actualizar pip e instalar dependencias.
 import sys        # Utilizado para obtener la lista de módulos cargados (en el bucle `for`)
 import os         # Utilizado para limpiar la consola después de actualizar pip y mostrar mensajes de error.
-from os import system # Utilizados para interactuar con la consola y mostrar mensajes de error.
+import re          # Importar la biblioteca regular expressions (expresiones regulares)
+from os import system, name # Utilizados para interactuar con la consola y mostrar mensajes de error.
+import time
 
 def actualizar_pip():
-    print("Actualizando pip...")
-    try:
-        if os.name == 'nt':  # Windows
-            subprocess.run(["pip", "install", "--upgrade", "-q", "pip"]) # Actualiza pip
-        else:  # Linux/macOS
-            try:
-                subprocess.run(["pip3", "install", "--upgrade", "-q", "pip"])  # Intenta actualizar con pip3
-            except Exception as e:
-                print(f"Error al actualizar pip con pip3: {e}")
-                subprocess.run(["sudo", "pip3", "install", "--upgrade", "-q", "pip"])  # Actualiza con sudo y pip3 si no funciona
-
-        if os.name == 'nt':  # Windows
-            system("cls")
-        else:
-            system("clear")  # Linux/macOS
-        print("Pip actualizado.")
-    except Exception as e:
-        print(f"Error al actualizar pip: {e}")
-
-
-def verificar_y_instalar_dependencias(dependencies):
-    need_install = False
-    for dependency in dependencies:
+    if os.name == 'nt':  # Windows
         try:
-            __import__(dependency)  # Intenta importar la dependencia
-        except ImportError:
-            print(f"La librería {dependency} no está instalada. Instalando...")
-            if os.name == 'nt':  # Windows
-                subprocess.run(["pip", "install", dependency])  # Instala la dependencia
-            elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):  # Linux/macOS
-                try:
-                    subprocess.run(["pip3", "install", dependency])  # Intenta instalar con pip3
-                except Exception as e:
-                    print(f"Error al instalar {dependency} con pip3: {e}")
-                    subprocess.run(["sudo", "pip3", "install", dependency])  # Instala la dependencia con sudo si no funciona
+            system("pip install --upgrade pip")
+        except Exception as e:
+            print(f"Error al actualizar pip con pip: {e}")
+            try:
+                system("python.exe -m pip install --upgrade pip")  # Intenta utilizar python.exe -m pip
+            except Exception as e:
+                print(f"Error al actualizar pip con python.exe -m pip: {e}")
+    elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'): # Linux/MacOS
+        try:
+            subprocess.run(["pip3", "--upgrade", "pip"])
+        except Exception as e:
+            print(f"Error al actualizar pip sin sudo: {e}")
+            try:
+                subprocess.run(["sudo", "pip3", "--upgrade", "pip"])  # Intenta utilizar sudo
+            except Exception as e:
+                print(f"Error al actualizar pip con sudo: {e}")
 
-    if not need_install:
-        print("Librerías cargadas.")
+def clear():
+	if name == 'nt':
+		_ = system('cls')
+	else:
+		_ = system('clear')
+
+def identify_dependencies():
+    """
+    Identificar los archivos .py en el directorio actual y analizar su contenido.
+    """
+    py_files = [f for f in os.listdir('.') if f.endswith('.py')]  # Buscar archivos Python
+    dependencies = []
+    for file in py_files:
+        with open(file, 'r') as fd:  # Abrir archivo en modo lectura
+            content = fd.read()      # Leer contenido del archivo
+            imports = set(re.findall(r'import\s+([a-zA-Z_][a-zA-Z0-9_.]*)', content))  # Encontrar importaciones
+            from_imports = set(re.findall(r'from\s+([a-zA-Z_][a-zA-Z0-9_.]*)\s+import', content))  # Encontrar imports "from"
+
+        dependencies.extend(imports)  # Agregar importaciones a la lista de dependencias
+        dependencies.extend(from_imports)
+
+    return list(set(dependencies))  # Eliminar duplicados y devolver la lista
+
+def install_dependencies(dependencies):
+    """
+    Intenta instalar los paquetes utilizando pip o pip3.
+    Si falla, intentará utilizar el otro método.
+    """
+    if os.name == 'nt':  # Windows
+        for dependency in dependencies:
+            try:
+                subprocess.run(['pip', '-q', 'install', dependency])  # Instalar con pip (Windows)                
+                print(f"{dependency} instalado correctamente.")
+                time.sleep(.7)
+                clear()
+            except Exception as e:
+                print(f"Error installing {dependency}: {e}")
+                subprocess.run(['python.exe', '-m', 'pip', '-q', 'install', dependency])
+                print(f"{dependency} instalado correctamente.")
+                time.sleep(.7)
+                clear()
+    else:  # Linux/MacOS
+        for dependency in dependencies:
+            try:
+                subprocess.run(['pip3', '-q', 'install', dependency])  # Instalar con pip3 (Linux/MacOS)
+                print(f"{dependency} instalado correctamente.")
+                time.sleep(.7)
+                clear()
+            except Exception as e:
+                print(f"Error installing {dependency}: {e}")
+                subprocess.run(['sudo', 'pip3', '-q', 'install', dependency])
+                print(f"{dependency} instalado correctamente.")
+                time.sleep(.7)
+                clear()
 
 def main_lib():
-    actualizar_pip() # Actualiza PIP
-    # Verifica e instala librerias
-    dependencies = [] # Se utiliza para almacenar los nombres de las dependencias.
-    for name, module in sys.modules.items(): # Nombre del módulo y el objeto que representa el módulo.
-        if not name.startswith('__'): # Se utiliza para filtrar los módulos
-            dependencies.append(module.__name__) # Agrega el nombre del módulo a la lista de dependencias. El método `__name__` devuelve el nombre del módulo como una cadena.
+    
+    actualizar_pip()  # Actualiza pip si es necesario
+    # Installa dependencias
+    dependencies = identify_dependencies()
+    if dependencies: 
+        install_dependencies(dependencies)
 
-    verificar_y_instalar_dependencias(dependencies)
 
 if __name__ == "__main__":
     main_lib()
